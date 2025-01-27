@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>福到运到！蛇年吉祥</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #c00;
+            font-family: "Microsoft YaHei", sans-serif;
+            touch-action: none;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+        #gameCanvas {
+            width: 100%;
+            border: 3px solid gold;
+            box-shadow: 0 0 20px gold;
+        }
+        #message {
+            color: gold;
+            font-size: 24px;
+            height: 30px;
+            margin: 15px;
+            text-align: center;
+        }
+        #controlPad {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            touch-action: none;
+        }
+        .controlBtn {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 215, 0, 0.5);
+            border: 2px solid gold;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+        }
+        #upBtn { top: 0; left: 70px; }
+        #downBtn { bottom: 0; left: 70px; }
+        #leftBtn { top: 70px; left: 0; }
+        #rightBtn { top: 70px; right: 0; }
+    </style>
+</head>
+<body>
+    <h1 style="color:gold;">🐍 蛇年吃福 🎉</h1>
+    <div id="message"></div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <div id="controlPad">
+        <div class="controlBtn" id="upBtn">↑</div>
+        <div class="controlBtn" id="downBtn">↓</div>
+        <div class="controlBtn" id="leftBtn">←</div>
+        <div class="controlBtn" id="rightBtn">→</div>
+    </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let BLOCK_SIZE = 20;
+let snake = [{x: 10, y: 10}];
+let food = {x: 15, y: 15};
+let direction = 'right';
+let score = 0;
+const blessings = [
+    "新年快乐！", "万事如意！", "财源广进！", 
+    "身体健康！", "步步高升！", "心想事成！",
+    "福星高照！", "笑口常开！", "吉祥如意！",
+    "年年有余！"
+];
+
+// 自适应屏幕
+function resizeCanvas() {
+    const container = document.getElementById('gameContainer');
+    const width = container.clientWidth;
+    const height = Math.floor(width * 0.66);
+    canvas.width = width;
+    canvas.height = height;
+    BLOCK_SIZE = Math.floor(width / 30);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// 生成福字
+function createFood() {
+    food = {
+        x: Math.floor(Math.random() * (canvas.width/BLOCK_SIZE)),
+        y: Math.floor(Math.random() * (canvas.height/BLOCK_SIZE))
+    };
+}
+
+// 彩蛋特效
+function playEgg() {
+    let colors = ['#ff0', '#f0f', '#0ff'];
+    let count = 0;
+    const eggEffect = setInterval(() => {
+        ctx.fillStyle = colors[count%3];
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        count++;
+        if(count >= 6) {
+            clearInterval(eggEffect);
+            ctx.fillStyle = '#c00';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+    }, 200);
+}
+
+function draw() {
+    ctx.fillStyle = '#c00';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    snake.forEach((segment, index) => {
+        ctx.fillStyle = index === 0 ? '#ff0' : '#ffd700';
+        ctx.fillRect(
+            segment.x*BLOCK_SIZE, 
+            segment.y*BLOCK_SIZE, 
+            BLOCK_SIZE-1, 
+            BLOCK_SIZE-1
+        );
+    });
+
+    ctx.fillStyle = '#fff';
+    ctx.font = `${BLOCK_SIZE}px Arial`;
+    ctx.fillText('福', food.x*BLOCK_SIZE, (food.y+1)*BLOCK_SIZE-2);
+}
+
+function update() {
+    const head = {...snake[0]};
+    switch(direction) {
+        case 'up': head.y--; break;
+        case 'down': head.y++; break;
+        case 'left': head.x--; break;
+        case 'right': head.x++; break;
+    }
+
+    if(head.x < 0 || head.x >= canvas.width/BLOCK_SIZE || 
+       head.y < 0 || head.y >= canvas.height/BLOCK_SIZE) {
+        alert('游戏结束！得分：' + score);
+        resetGame();
+        return;
+    }
+
+    if(head.x === food.x && head.y === food.y) {
+        score++;
+        document.getElementById('message').textContent = blessings[Math.floor(Math.random()*blessings.length)];
+        if(score % 10 === 0) {
+            playEgg();
+            document.getElementById('message').textContent = "🎉 福气爆棚！龙年大吉！ 🐉";
+        }
+        createFood();
+    } else {
+        snake.pop();
+    }
+
+    snake.unshift(head);
+}
+
+function resetGame() {
+    snake = [{x: 10, y: 10}];
+    direction = 'right';
+    score = 0;
+    createFood();
+}
+
+// 触摸控制
+const controlBtns = {
+    upBtn: 'up',
+    downBtn: 'down',
+    leftBtn: 'left',
+    rightBtn: 'right'
+};
+
+Object.keys(controlBtns).forEach(btnId => {
+    const btn = document.getElementById(btnId);
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const newDirection = controlBtns[btnId];
+        if (direction === 'up' && newDirection === 'down') return;
+        if (direction === 'down' && newDirection === 'up') return;
+        if (direction === 'left' && newDirection === 'right') return;
+        if (direction === 'right' && newDirection === 'left') return;
+        direction = newDirection;
+    });
+});
+
+// 保留键盘控制
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case 'ArrowUp': if(direction !== 'down') direction = 'up'; break;
+        case 'ArrowDown': if(direction !== 'up') direction = 'down'; break;
+        case 'ArrowLeft': if(direction !== 'right') direction = 'left'; break;
+        case 'ArrowRight': if(direction !== 'left') direction = 'right'; break;
+    }
+});
+
+// 游戏循环
+createFood();
+setInterval(() => {
+    update();
+    draw();
+}, 150);
+</script>
+</body>
+</html>
